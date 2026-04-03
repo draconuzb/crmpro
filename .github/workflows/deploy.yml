@@ -1,11 +1,11 @@
-name: Deploy to Production
+name: Deploy CRMPro
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 env:
-  DEPLOY_PATH: /home/ubuntu/modme-crm
+  DEPLOY_PATH: /home/ubuntu/crmpro
 
 jobs:
   build-web:
@@ -29,10 +29,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build shared
-        run: pnpm --filter @modme/shared build 2>/dev/null || true
+        run: pnpm --filter @crmpro/shared build 2>/dev/null || true
 
       - name: Build web
-        run: pnpm --filter web build
+        run: pnpm --filter @crmpro/web build
 
       - name: Upload dist
         uses: actions/upload-artifact@v4
@@ -41,10 +41,43 @@ jobs:
           path: apps/web/dist
           retention-days: 1
 
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared
+        run: pnpm --filter @crmpro/shared build 2>/dev/null || true
+
+      - name: Build API
+        run: pnpm --filter @crmpro/api build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist
+          retention-days: 1
+
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
-    needs: build-web
+    needs: [build-web, build-api]
     timeout-minutes: 15
 
     steps:
@@ -55,6 +88,12 @@ jobs:
         with:
           name: web-dist
           path: apps/web/dist
+
+      - name: Download API dist
+        uses: actions/download-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist
 
       - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
@@ -77,7 +116,7 @@ jobs:
           command_timeout: 10m
           script: |
             set -e
-            echo "══════ Deploying Modme CRM ══════"
+            echo "══════ Deploying CRMPro ══════"
             cd ${{ env.DEPLOY_PATH }}
 
             if [ ! -f .env ]; then
@@ -85,13 +124,13 @@ jobs:
               exit 1
             fi
 
-            echo "→ Building & starting containers..."
+            echo "→ Building & starting containers (API + Web + Bot)..."
             docker compose -f docker-compose.prod.yml up -d --build
 
             echo "→ Waiting for services..."
-            sleep 10
+            sleep 15
 
-            echo "→ Cleaning up..."
+            echo "→ Cleaning up old images..."
             docker image prune -f
 
             echo "══════ Deploy complete! ══════"
@@ -104,11 +143,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sleep 5
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80 || echo "000")
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "✓ Health check passed (HTTP $HTTP_CODE)"
+
+            # Check API health
+            API_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health 2>/dev/null || echo "000")
+            echo "API health: HTTP $API_CODE"
+
+            # Check Web
+            WEB_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80 || echo "000")
+            echo "Web health: HTTP $WEB_CODE"
+
+            if [ "$WEB_CODE" = "200" ]; then
+              echo "✓ All health checks passed"
             else
-              echo "✗ Health check failed (HTTP $HTTP_CODE)"
-              docker compose -f /home/ubuntu/modme-crm/docker-compose.prod.yml logs --tail=50
+              echo "✗ Health check failed"
+              docker compose -f /home/ubuntu/crmpro/docker-compose.prod.yml logs --tail=30
               exit 1
             fi

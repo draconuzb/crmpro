@@ -11,7 +11,8 @@
     "dev:bot": "pnpm --filter @crmpro/bot dev",
     "db:migrate": "pnpm --filter @crmpro/api prisma:migrate",
     "db:seed": "pnpm --filter @crmpro/api prisma:seed",
-    "db:studio": "pnpm --filter @crmpro/api prisma:studio"
+    "db:studio": "pnpm --filter @crmpro/api prisma:studio",
+    "migrate:sqlite": "npx ts-node scripts/migrate-from-sqlite.ts"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

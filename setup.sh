@@ -2,12 +2,12 @@
 set -e
 
 # ═══════════════════════════════════════
-# Modme CRM — Server First-Time Setup
+# CRMPro — Server First-Time Setup
 # Run: chmod +x setup.sh && ./setup.sh
 # ═══════════════════════════════════════
 
 echo "══════════════════════════════════════"
-echo "  Modme CRM — Server Setup"
+echo "  CRMPro — Server Setup"
 echo "══════════════════════════════════════"
 
 # ── 1. System update ──

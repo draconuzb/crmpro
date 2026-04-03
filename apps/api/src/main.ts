@@ -14,17 +14,24 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
+  // Health check endpoint (no auth required)
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/api/health', (_req: any, res: any) => {
+    res.json({ status: 'ok', service: 'crmpro-api', timestamp: new Date().toISOString() });
+  });
+
   const config = new DocumentBuilder()
-    .setTitle('Modme CRM API')
-    .setDescription('Educational Center CRM API')
-    .setVersion('1.0')
+    .setTitle('CRMPro API')
+    .setDescription('Professional CRM for Educational Centers')
+    .setVersion('2.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(3000);
-  console.log('API running on http://localhost:3000');
-  console.log('Swagger docs: http://localhost:3000/api/docs');
+  const port = process.env.API_PORT || 3000;
+  await app.listen(port);
+  console.log(`CRMPro API running on http://localhost:${port}`);
+  console.log(`Swagger docs: http://localhost:${port}/api/docs`);
 }
 bootstrap();
