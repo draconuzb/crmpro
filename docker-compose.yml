@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: modme_crm
-      POSTGRES_USER: modme
-      POSTGRES_PASSWORD: modme_secret
+      POSTGRES_DB: crmpro
+      POSTGRES_USER: crmpro
+      POSTGRES_PASSWORD: crmpro_secret
     ports:
       - "5432:5432"
     volumes:
