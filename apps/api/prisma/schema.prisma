@@ -1,0 +1,615 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// BRANCH (multi-tenancy)
+model Branch {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        UserBranch[]
+  courses      Course[]
+  rooms        Room[]
+  groups       Group[]
+  leads        Lead[]
+  students     Student[]
+  payments     Payment[]
+  withdrawals  Withdrawal[]
+  expenses     Expense[]
+  reminders    Reminder[]
+  tags         Tag[]
+  holidays     Holiday[]
+  smsSettings  SmsSettings?
+  voipSettings VoipSettings?
+  forms        Form[]
+  blogPosts    BlogPost[]
+  products     Product[]
+  orders       Order[]
+  configs      BranchConfig[]
+}
+
+// AUTH & USERS
+enum Role {
+  CEO
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  phone     String   @unique
+  password  String
+  avatar    String?
+  role      Role
+  gender    String?
+  dateOfBirth DateTime?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches      UserBranch[]
+  teacher       Teacher?
+  student       Student?
+  refreshTokens RefreshToken[]
+  logs          Log[]
+  comments      Comment[]
+}
+
+model UserBranch {
+  userId   Int
+  branchId Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  @@id([userId, branchId])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// TEACHER
+model Teacher {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio       String?
+  createdAt DateTime @default(now())
+
+  groups             Group[]
+  salaries           Salary[]
+  teacherAttendances TeacherAttendance[]
+  workSchedules      WorkSchedule[]
+}
+
+// STUDENT
+model Student {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  balance    Decimal  @default(0) @db.Decimal(15, 2)
+  coins      Int      @default(0)
+  externalId String?
+  leadId     Int?     @unique
+  lead       Lead?    @relation(fields: [leadId], references: [id])
+  isArchived Boolean  @default(false)
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  groupEnrollments GroupStudent[]
+  payments         Payment[]
+  attendances      Attendance[]
+  grades           GradeRecord[]
+  examResults      ExamResult[]
+  comments         Comment[]
+  callHistory      CallRecord[]
+  smsHistory       SmsRecord[]
+  reminders        Reminder[]
+  orders           Order[]
+  ratings          Rating[]
+}
+
+// COURSE & SUBCOURSE
+model Course {
+  id              Int      @id @default(autoincrement())
+  branchId        Int
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  name            String
+  description     String?
+  image           String?
+  price           Decimal  @db.Decimal(15, 2)
+  duration        Int?
+  lessonDuration  Int?     // minutes
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  subcourses Subcourse[]
+  groups     Group[]
+  leads      Lead[]
+}
+
+model Subcourse {
+  id        Int    @id @default(autoincrement())
+  courseId   Int
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name      String
+  materials String?
+  sortOrder Int    @default(0)
+}
+
+// ROOM
+model Room {
+  id       Int     @id @default(autoincrement())
+  branchId Int
+  branch   Branch  @relation(fields: [branchId], references: [id])
+  name     String
+  capacity Int?
+  isActive Boolean @default(true)
+
+  groups Group[]
+}
+
+// GROUP
+enum DayType {
+  ODD
+  EVEN
+  OTHER
+}
+
+enum GroupStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+model Group {
+  id         Int         @id @default(autoincrement())
+  branchId   Int
+  branch     Branch      @relation(fields: [branchId], references: [id])
+  name       String
+  courseId    Int
+  course     Course      @relation(fields: [courseId], references: [id])
+  teacherId  Int
+  teacher    Teacher     @relation(fields: [teacherId], references: [id])
+  roomId     Int?
+  room       Room?       @relation(fields: [roomId], references: [id])
+  dayType    DayType
+  customDays String?
+  startTime  String
+  endTime    String
+  startDate  DateTime
+  endDate    DateTime?
+  capacity   Int?
+  note       String?
+  status     GroupStatus @default(ACTIVE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  students      GroupStudent[]
+  attendances   Attendance[]
+  grades        GradeRecord[]
+  onlineLessons OnlineLesson[]
+  discounts     Discount[]
+  exams         Exam[]
+  tags          GroupTag[]
+}
+
+model GroupStudent {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  price     Decimal  @db.Decimal(15, 2)
+  status    String   @default("ACTIVE")
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, studentId])
+}
+
+// LEAD
+enum LeadStatus {
+  LEAD
+  EXPECTATION
+  SET
+}
+
+model Lead {
+  id           Int        @id @default(autoincrement())
+  branchId     Int
+  branch       Branch     @relation(fields: [branchId], references: [id])
+  firstName    String
+  lastName     String?
+  phone        String
+  status       LeadStatus @default(LEAD)
+  courseId      Int?
+  course       Course?    @relation(fields: [courseId], references: [id])
+  source       String?
+  assignedToId Int?
+  note         String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  student   Student?
+  tags      LeadTag[]
+  reminders Reminder[]
+}
+
+model LeadTag {
+  leadId Int
+  tagId  Int
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([leadId, tagId])
+}
+
+// ATTENDANCE
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  groupId   Int
+  group     Group            @relation(fields: [groupId], references: [id])
+  studentId Int
+  student   Student          @relation(fields: [studentId], references: [id])
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@unique([groupId, studentId, date])
+}
+
+model TeacherAttendance {
+  id        Int      @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  date      DateTime @db.Date
+  checkIn   DateTime?
+  checkOut  DateTime?
+  status    String   @default("PRESENT")
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, date])
+}
+
+model WorkSchedule {
+  id        Int     @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+  dayOfWeek Int
+  startTime String
+  endTime   String
+}
+
+// GRADE & EXAM
+model GradeRecord {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id])
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  date      DateTime @db.Date
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, studentId, date])
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id])
+  title     String
+  date      DateTime
+  maxScore  Int
+  createdAt DateTime @default(now())
+
+  results ExamResult[]
+}
+
+model ExamResult {
+  id        Int      @id @default(autoincrement())
+  examId    Int
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  score     Int
+  createdAt DateTime @default(now())
+
+  @@unique([examId, studentId])
+}
+
+// FINANCE
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  branchId    Int
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  studentId   Int
+  student     Student       @relation(fields: [studentId], references: [id])
+  amount      Decimal       @db.Decimal(15, 2)
+  method      PaymentMethod
+  description String?
+  createdById Int?
+  date        DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+}
+
+model Withdrawal {
+  id          Int           @id @default(autoincrement())
+  branchId    Int
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  amount      Decimal       @db.Decimal(15, 2)
+  method      PaymentMethod
+  description String?
+  category    String?
+  createdById Int?
+  date        DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+}
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  title     String
+  amount    Decimal  @db.Decimal(15, 2)
+  category  String
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Salary {
+  id        Int      @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  groupId   Int?
+  month     Int
+  year      Int
+  amount    Decimal  @db.Decimal(15, 2)
+  isPaid    Boolean  @default(false)
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, groupId, month, year])
+}
+
+// REMINDER
+model Reminder {
+  id             Int       @id @default(autoincrement())
+  branchId       Int
+  branch         Branch    @relation(fields: [branchId], references: [id])
+  title          String
+  description    String?
+  dueDate        DateTime
+  isCompleted    Boolean   @default(false)
+  completedAt    DateTime?
+  completionNote String?
+  leadId         Int?
+  lead           Lead?     @relation(fields: [leadId], references: [id])
+  studentId      Int?
+  student        Student?  @relation(fields: [studentId], references: [id])
+  assignedToId   Int?
+  createdById    Int
+  createdAt      DateTime  @default(now())
+}
+
+// RATING
+model Rating {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  groupId   Int
+  score     Decimal  @db.Decimal(5, 2)
+  period    String
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, groupId, period])
+}
+
+// COMMUNICATION
+model SmsRecord {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  phone     String
+  message   String
+  status    String   @default("SENT")
+  sentAt    DateTime @default(now())
+}
+
+model CallRecord {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id])
+  phone        String
+  direction    String
+  duration     Int?
+  recordingUrl String?
+  calledAt     DateTime @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id])
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// GAMIFICATION
+model Product {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  name        String
+  description String?
+  image       String?
+  coinPrice   Int
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  studentId  Int
+  student    Student  @relation(fields: [studentId], references: [id])
+  productId  Int
+  coinAmount Int
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+}
+
+// GROUP EXTRAS
+model OnlineLesson {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id])
+  title     String
+  url       String
+  date      DateTime
+  createdAt DateTime @default(now())
+}
+
+model Discount {
+  id          Int      @id @default(autoincrement())
+  groupId     Int
+  group       Group    @relation(fields: [groupId], references: [id])
+  name        String
+  percentage  Decimal? @db.Decimal(5, 2)
+  fixedAmount Decimal? @db.Decimal(15, 2)
+  isActive    Boolean  @default(true)
+}
+
+// TAGS
+model Tag {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+
+  leads  LeadTag[]
+  groups GroupTag[]
+}
+
+model GroupTag {
+  groupId Int
+  tagId   Int
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([groupId, tagId])
+}
+
+// SETTINGS
+model SmsSettings {
+  id         Int     @id @default(autoincrement())
+  branchId   Int     @unique
+  branch     Branch  @relation(fields: [branchId], references: [id])
+  provider   String
+  apiKey     String?
+  senderName String?
+  isActive   Boolean @default(false)
+}
+
+model VoipSettings {
+  id        Int     @id @default(autoincrement())
+  branchId  Int     @unique
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  provider  String
+  apiKey    String?
+  sipDomain String?
+  isActive  Boolean @default(false)
+}
+
+model Holiday {
+  id       Int      @id @default(autoincrement())
+  branchId Int
+  branch   Branch   @relation(fields: [branchId], references: [id])
+  name     String
+  date     DateTime @db.Date
+}
+
+model Form {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  title     String
+  fields    Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  title       String
+  content     String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// BRANCH CONFIG (key-value settings per branch)
+model BranchConfig {
+  id       Int    @id @default(autoincrement())
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+  key      String
+  value    Json
+
+  @@unique([branchId, key])
+}
+
+// AUDIT LOG
+model Log {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  Int?
+  details   Json?
+  createdAt DateTime @default(now())
+}
