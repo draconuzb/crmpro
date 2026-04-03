@@ -58,4 +58,10 @@ export class UserController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.userService.remove(id);
   }
+
+  @Get('telegram/:telegramId')
+  @ApiOperation({ summary: 'Find user by Telegram ID (for bot auth)' })
+  findByTelegramId(@Param('telegramId') telegramId: string) {
+    return this.userService.findByTelegramId(telegramId);
+  }
 }

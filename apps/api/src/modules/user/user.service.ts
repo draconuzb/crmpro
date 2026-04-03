@@ -127,4 +127,23 @@ export class UserService {
       data: { isActive: false },
     });
   }
+
+  async findByTelegramId(telegramId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { telegramId },
+      include: {
+        branches: {
+          include: { branch: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with Telegram ID ${telegramId} not found`);
+    }
+    const { password, ...result } = user;
+    return {
+      ...result,
+      branches: user.branches.map((ub) => ub.branch),
+    };
+  }
 }

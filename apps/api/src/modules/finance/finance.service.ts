@@ -710,6 +710,59 @@ export class FinanceService {
     });
   }
 
+  // ─── CATEGORIES ──────────────────────────────────────────────────
+
+  async getCategories(branchId: number) {
+    return this.prisma.financeCategory.findMany({
+      where: { branchId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  async createCategory(branchId: number, dto: { key: string; label: string; color?: string }) {
+    const maxSort = await this.prisma.financeCategory.aggregate({
+      where: { branchId },
+      _max: { sortOrder: true },
+    });
+    return this.prisma.financeCategory.create({
+      data: {
+        branchId,
+        key: dto.key,
+        label: dto.label,
+        color: dto.color || '#06b6d4',
+        sortOrder: (maxSort._max.sortOrder || 0) + 1,
+      },
+    });
+  }
+
+  async getFinanceSummaryByCategory(branchId: number) {
+    const categories = await this.getCategories(branchId);
+    const result = [];
+
+    for (const cat of categories) {
+      const [payments, withdrawals] = await Promise.all([
+        this.prisma.payment.aggregate({
+          where: { branchId, category: cat.key },
+          _sum: { amount: true },
+        }),
+        this.prisma.withdrawal.aggregate({
+          where: { branchId, category: cat.key },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      result.push({
+        category: cat.key,
+        label: cat.label,
+        color: cat.color,
+        income: Number(payments._sum.amount || 0),
+        withdrawal: Number(withdrawals._sum.amount || 0),
+      });
+    }
+
+    return result;
+  }
+
   private groupSalariesByTeacher(salaries: any[]) {
     const map: Record<number, any> = {};
     for (const s of salaries) {

@@ -158,11 +158,34 @@ export class FinanceController {
     return this.financeService.getDebtors(branchId, query);
   }
 
+  // ─── FINANCE CATEGORIES ─────────────────────────────────────────
+
+  @Get('categories')
+  @ApiOperation({ summary: 'List finance categories (cash/bank/custom)' })
+  getCategories(@CurrentBranch() branchId: number) {
+    return this.financeService.getCategories(branchId);
+  }
+
+  @Post('categories')
+  @ApiOperation({ summary: 'Create finance category' })
+  createCategory(
+    @CurrentBranch() branchId: number,
+    @Body() dto: { key: string; label: string; color?: string },
+  ) {
+    return this.financeService.createCategory(branchId, dto);
+  }
+
   // ─── SUMMARY ───────────────────────────────────────────────────────
 
   @Get('summary')
   @ApiOperation({ summary: 'Overall finance summary' })
   getSummary(@CurrentBranch() branchId: number) {
     return this.financeService.getFinanceSummary(branchId);
+  }
+
+  @Get('summary/by-category')
+  @ApiOperation({ summary: 'Finance summary grouped by category (cash/bank)' })
+  getSummaryByCategory(@CurrentBranch() branchId: number) {
+    return this.financeService.getFinanceSummaryByCategory(branchId);
   }
 }

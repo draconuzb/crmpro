@@ -26,6 +26,15 @@ import { HolidayModule } from './modules/holiday/holiday.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { SettingsModule } from './modules/settings/settings.module';
 
+// CRMPro new modules
+import { KpiModule } from './modules/kpi/kpi.module';
+import { HrModule } from './modules/hr/hr.module';
+import { AiModule } from './modules/ai/ai.module';
+import { PdfModule } from './modules/pdf/pdf.module';
+import { DailyReportModule } from './modules/daily-report/daily-report.module';
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
+import { ProblemModule } from './modules/problem/problem.module';
+
 @Module({
   imports: [
     PrismaModule,
@@ -54,6 +63,15 @@ import { SettingsModule } from './modules/settings/settings.module';
     HolidayModule,
     ScheduleModule,
     SettingsModule,
+
+    // CRMPro new modules
+    KpiModule,
+    HrModule,
+    AiModule,
+    PdfModule,
+    DailyReportModule,
+    SchedulerModule,
+    ProblemModule,
   ],
 })
 export class AppModule {}
