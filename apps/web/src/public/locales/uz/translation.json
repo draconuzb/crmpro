@@ -45,7 +45,13 @@
     "office": "Ofis",
     "forms": "Formalar",
     "blog": "Blog",
-    "tags": "Teglar"
+    "tags": "Teglar",
+    "kpi": "KPI",
+    "hr": "HR",
+    "hrStaff": "Xodimlar",
+    "hrGoals": "Maqsadlar",
+    "aiInsights": "AI Insights",
+    "problems": "Muammolar"
   },
   "pages": {
     "dashboard": "Bosh sahifa",
@@ -79,6 +85,11 @@
     "office": "Ofis sozlamalari",
     "forms": "Formalar",
     "blog": "Blog",
-    "tags": "Teglar"
+    "tags": "Teglar",
+    "kpi": "KPI Dashboard",
+    "hrStaff": "Xodimlar",
+    "hrGoals": "Maqsadlar",
+    "aiInsights": "AI Insights",
+    "problems": "Muammolar"
   }
 }

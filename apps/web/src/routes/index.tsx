@@ -39,6 +39,13 @@ const FormsPage = lazy(() => import('@/pages/settings/FormsPage'));
 const BlogPage = lazy(() => import('@/pages/settings/BlogPage'));
 const TagsPage = lazy(() => import('@/pages/settings/TagsPage'));
 
+// CRMPro new pages
+const KpiDashboardPage = lazy(() => import('@/pages/kpi/KpiDashboardPage'));
+const HrStaffPage = lazy(() => import('@/pages/hr/HrStaffPage'));
+const HrGoalsPage = lazy(() => import('@/pages/hr/HrGoalsPage'));
+const AiInsightsPage = lazy(() => import('@/pages/ai/AiInsightsPage'));
+const ProblemsPage = lazy(() => import('@/pages/problems/ProblemsPage'));
+
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: 48 }}>
     <Spin size="large" />
@@ -90,6 +97,13 @@ const AppRoutes: React.FC = () => {
             <Route path="/settings/forms" element={<FormsPage />} />
             <Route path="/settings/blog" element={<BlogPage />} />
             <Route path="/settings/tags" element={<TagsPage />} />
+
+            {/* CRMPro new routes */}
+            <Route path="/kpi" element={<KpiDashboardPage />} />
+            <Route path="/hr/staff" element={<HrStaffPage />} />
+            <Route path="/hr/goals" element={<HrGoalsPage />} />
+            <Route path="/ai" element={<AiInsightsPage />} />
+            <Route path="/problems" element={<ProblemsPage />} />
           </Route>
         </Route>
       </Routes>

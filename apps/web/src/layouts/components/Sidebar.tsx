@@ -15,6 +15,9 @@ import {
   BarChartOutlined,
   TrophyOutlined,
   SettingOutlined,
+  RobotOutlined,
+  WarningOutlined,
+  AimOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -70,6 +73,30 @@ const Sidebar: React.FC = () => {
       key: '/teacher-attendance',
       icon: <ScheduleOutlined />,
       label: t('sidebar.teacherAttendance'),
+    },
+    {
+      key: '/kpi',
+      icon: <TrophyOutlined />,
+      label: 'KPI',
+    },
+    {
+      key: 'hr',
+      icon: <TeamOutlined />,
+      label: 'HR',
+      children: [
+        { key: '/hr/staff', label: 'Xodimlar' },
+        { key: '/hr/goals', label: 'Maqsadlar' },
+      ],
+    },
+    {
+      key: '/ai',
+      icon: <RobotOutlined />,
+      label: 'AI Insights',
+    },
+    {
+      key: '/problems',
+      icon: <WarningOutlined />,
+      label: 'Muammolar',
     },
     {
       key: 'finance',
@@ -128,7 +155,7 @@ const Sidebar: React.FC = () => {
   };
 
   const selectedKeys = [location.pathname];
-  const openKeys = ['finance', 'reports', 'gamification', 'settings'].filter((key) =>
+  const openKeys = ['finance', 'reports', 'gamification', 'settings', 'hr'].filter((key) =>
     location.pathname.startsWith(`/${key}`),
   );
 
