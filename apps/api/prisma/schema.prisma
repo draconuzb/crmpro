@@ -36,12 +36,24 @@ model Branch {
   products     Product[]
   orders       Order[]
   configs      BranchConfig[]
+
+  // CRMPro new relations
+  financeCategories FinanceCategory[]
+  kpiTargets        KpiTarget[]
+  kpiAssignments    KpiAssignment[]
+  hrStaff           HrStaff[]
+  hrGoals           HrGoal[]
+  dailyReports      DailyReport[]
+  problems          Problem[]
+  emptyRooms        EmptyRoom[]
+  aiInsights        AiInsight[]
 }
 
 // AUTH & USERS
 enum Role {
   CEO
   ADMIN
+  MANAGER
   TEACHER
   STUDENT
 }
@@ -59,6 +71,10 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  telegramId   String?  @unique
+  telegramLang String?  @default("uz")
+  botSections  Json?
 
   branches      UserBranch[]
   teacher       Teacher?
@@ -166,7 +182,8 @@ model Room {
   capacity Int?
   isActive Boolean @default(true)
 
-  groups Group[]
+  groups     Group[]
+  emptyRooms EmptyRoom[]
 }
 
 // GROUP
@@ -363,6 +380,7 @@ model Payment {
   student     Student       @relation(fields: [studentId], references: [id])
   amount      Decimal       @db.Decimal(15, 2)
   method      PaymentMethod
+  category    String?       // finance category key: "cash", "bank", etc.
   description String?
   createdById Int?
   date        DateTime      @default(now())
@@ -612,4 +630,166 @@ model Log {
   entityId  Int?
   details   Json?
   createdAt DateTime @default(now())
+}
+
+// ══════════════════════���════════════════
+// CRMPro — New Models (asad-project merge)
+// ═══════════════════════════════════════
+
+// FINANCE CATEGORY (dual accounting: cash/bank)
+model FinanceCategory {
+  id        Int    @id @default(autoincrement())
+  branchId  Int
+  branch    Branch @relation(fields: [branchId], references: [id])
+  key       String // "cash", "bank", or custom
+  label     String // display name
+  color     String @default("#06b6d4")
+  sortOrder Int    @default(0)
+
+  @@unique([branchId, key])
+}
+
+// KPI TRACKING
+model KpiTarget {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  metric      String   // "leads", "enrollments", "revenue", "attendance_rate", "debtors"
+  month       String   // "2026-04"
+  targetValue Decimal  @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+
+  @@unique([branchId, metric, month])
+}
+
+model KpiAssignment {
+  id           Int      @id @default(autoincrement())
+  branchId     Int
+  branch       Branch   @relation(fields: [branchId], references: [id])
+  month        String
+  metric       String
+  targetValue  Decimal  @db.Decimal(15, 2)
+  direction    String   @default("up") // "up" | "down"
+  assignedToId Int
+  assignedById Int
+  createdAt    DateTime @default(now())
+
+  @@unique([branchId, month, metric, assignedToId])
+}
+
+// HR STAFF MANAGEMENT
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  DISMISSED
+}
+
+model HrStaff {
+  id        Int         @id @default(autoincrement())
+  branchId  Int
+  branch    Branch      @relation(fields: [branchId], references: [id])
+  name      String
+  phone     String?
+  category  String?     // "teacher", "admin", "support", "manager"
+  position  String?
+  subject   String?
+  startDate DateTime?
+  endDate   DateTime?
+  status    StaffStatus @default(ACTIVE)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model HrGoal {
+  id          Int       @id @default(autoincrement())
+  branchId    Int
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  category    String?
+  subject     String?
+  title       String
+  description String?
+  deadline    DateTime?
+  status      String    @default("pending") // pending, in_progress, completed, cancelled
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// DAILY REPORT (bot & CRM sync aggregated data)
+model DailyReport {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  date       DateTime @db.Date
+  section    String   // "leads", "debtors", "finance", "attendance", "problems", "rejections"
+  data       Json     // flexible: { count, amount, subject, etc. }
+  reportedBy Int?     // userId who entered via bot
+  source     String   @default("manual") // "manual", "crm-sync", "bot"
+  createdAt  DateTime @default(now())
+
+  @@index([branchId, date, section])
+}
+
+// PROBLEM TRACKING
+model Problem {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  type       String   // "equipment", "facility", "staff", "student", "finance", "other"
+  issue      String
+  status     String   @default("open") // open, in_progress, resolved
+  reportedBy Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// EMPTY ROOM TRACKING
+model EmptyRoom {
+  id              Int      @id @default(autoincrement())
+  branchId        Int
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  roomId          Int?
+  room            Room?    @relation(fields: [roomId], references: [id])
+  days            String   // "Dush,Chor,Jum"
+  timeSlot        String   // "14:00-16:00"
+  period          String?
+  capacity        Int      @default(20)
+  pricePerStudent Decimal  @db.Decimal(15, 2) @default(350000)
+  createdAt       DateTime @default(now())
+}
+
+// AI INSIGHTS
+model AiInsight {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  type       String   // "daily_analysis", "anomaly", "qa_response", "weekly_summary"
+  reportDate DateTime @db.Date
+  content    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
+
+// CRON JOBS CONFIGURATION
+model CronJob {
+  id         Int      @id @default(autoincrement())
+  branchId   Int?
+  key        String   @unique
+  label      String
+  schedule   String   // cron expression: "0 9 * * *"
+  enabled    Boolean  @default(true)
+  type       String   @default("message") // "message", "report"
+  message    String?
+  sections   String?  // comma-separated: "leads,finance,attendance"
+  assignedTo Json?    // array of user IDs
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// CRM SYNC STATE
+model CrmSyncState {
+  id           Int      @id @default(autoincrement())
+  syncType     String   @unique // "leads", "payments", "expenses", "debtors", "attendance"
+  lastSyncedAt DateTime
+  updatedAt    DateTime @updatedAt
 }

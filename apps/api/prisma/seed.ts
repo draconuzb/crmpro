@@ -81,6 +81,72 @@ async function main() {
   });
   console.log('Course created:', course.name);
 
+  // 6. Create default finance categories (dual accounting)
+  const cashCat = await prisma.financeCategory.upsert({
+    where: { branchId_key: { branchId: branch.id, key: 'cash' } },
+    update: {},
+    create: {
+      branchId: branch.id,
+      key: 'cash',
+      label: 'Naqd',
+      color: '#06b6d4',
+      sortOrder: 0,
+    },
+  });
+  const bankCat = await prisma.financeCategory.upsert({
+    where: { branchId_key: { branchId: branch.id, key: 'bank' } },
+    update: {},
+    create: {
+      branchId: branch.id,
+      key: 'bank',
+      label: 'Bank',
+      color: '#8b5cf6',
+      sortOrder: 1,
+    },
+  });
+  console.log('Finance categories created:', cashCat.label, bankCat.label);
+
+  // 7. Create default cron jobs
+  const cronJobs = [
+    {
+      key: 'daily_report',
+      label: 'Kunlik hisobot',
+      schedule: '0 9 * * *',
+      type: 'report',
+      sections: 'leads,finance,attendance,debtors',
+    },
+    {
+      key: 'weekly_report',
+      label: 'Haftalik hisobot',
+      schedule: '0 9 * * 1',
+      type: 'report',
+      sections: 'leads,finance,attendance,debtors,problems',
+    },
+    {
+      key: 'monthly_report',
+      label: 'Oylik hisobot',
+      schedule: '0 9 1 * *',
+      type: 'report',
+      sections: 'leads,finance,attendance,debtors,problems,rejections',
+    },
+    {
+      key: 'daily_reminder',
+      label: 'Kunlik eslatma',
+      schedule: '0 18 * * 1-6',
+      type: 'message',
+      message: 'Bugungi ma\'lumotlarni kiritishni unutmang!',
+    },
+  ];
+
+  for (const job of cronJobs) {
+    await prisma.cronJob.upsert({
+      where: { key: job.key },
+      update: {},
+      create: job,
+    });
+  }
+  console.log('Cron jobs created:', cronJobs.length);
+
   console.log('Seed completed successfully!');
 }
 
