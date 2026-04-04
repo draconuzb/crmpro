@@ -98,7 +98,8 @@ const DashboardLayout: React.FC = () => {
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           width={280}
-          styles={{ body: { padding: 0, background: '#0f172a' }, header: { display: 'none' } }}
+          closable={false}
+          styles={{ body: { padding: 0, background: '#0f172a' } }}
         >
           <div style={{ background: '#0f172a', minHeight: '100%' }}>
             {siderContent}
