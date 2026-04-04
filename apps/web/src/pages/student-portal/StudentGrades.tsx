@@ -1,44 +1,27 @@
-import { Card, Table, Typography, Tag } from 'antd';
+import { Card, Table, Typography, Tag, Spin, Empty } from 'antd';
 import { BookOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { getMyStudentGrades } from '../../features/me/api';
 
 const { Title } = Typography;
 
-const grades = [
-  { id: 1, date: '2026-04-03', group: 'English B1', score: 85, max: 100 },
-  { id: 2, date: '2026-04-02', group: 'Math Advanced', score: 92, max: 100 },
-  { id: 3, date: '2026-04-01', group: 'English B1', score: 78, max: 100 },
-  { id: 4, date: '2026-03-28', group: 'Math Advanced', score: 88, max: 100 },
-  { id: 5, date: '2026-03-27', group: 'English B1', score: 90, max: 100 },
-];
-
 const StudentGrades: React.FC = () => {
+  const { data, isLoading } = useQuery({ queryKey: ['my-student-grades'], queryFn: getMyStudentGrades });
+  if (isLoading) return <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>;
+
   return (
     <>
-      <Title level={4} style={{ marginBottom: 20 }}>
-        <BookOutlined style={{ color: '#8b5cf6', marginRight: 8 }} />
-        Baholarim
-      </Title>
-
+      <Title level={4} style={{ marginBottom: 20 }}><BookOutlined style={{ color: '#8b5cf6', marginRight: 8 }} />Baholarim</Title>
       <Card style={{ borderRadius: 14, border: '1px solid #e2e8f0' }}>
-        <Table
-          dataSource={grades}
-          rowKey="id"
-          pagination={false}
-          columns={[
-            { title: 'Sana', dataIndex: 'date', width: 110 },
-            { title: 'Guruh', dataIndex: 'group' },
-            {
-              title: 'Baho',
-              dataIndex: 'score',
-              width: 100,
-              render: (score: number, record: any) => {
-                const pct = (score / record.max) * 100;
-                const color = pct >= 85 ? 'green' : pct >= 70 ? 'gold' : 'red';
-                return <Tag color={color} style={{ fontSize: 14, fontWeight: 700 }}>{score}/{record.max}</Tag>;
-              },
-            },
-          ]}
-        />
+        {!data || data.length === 0 ? <Empty description="Baholar hali yoq" /> : (
+          <Table dataSource={data} rowKey="id" pagination={false} scroll={{ x: 400 }}
+            columns={[
+              { title: 'Sana', dataIndex: 'date', width: 110, render: (v: string) => new Date(v).toLocaleDateString() },
+              { title: 'Guruh', render: (_: any, r: any) => r.group?.course?.name || r.group?.name },
+              { title: 'Baho', dataIndex: 'score', width: 80,
+                render: (v: number) => <Tag color={v >= 85 ? 'green' : v >= 70 ? 'gold' : 'red'} style={{ fontWeight: 700 }}>{v}</Tag> },
+            ]} />
+        )}
       </Card>
     </>
   );

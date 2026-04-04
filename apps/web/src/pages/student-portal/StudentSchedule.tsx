@@ -1,64 +1,37 @@
-import { Card, Typography, List, Tag, Empty } from 'antd';
+import { Card, Typography, Tag, Spin, Empty } from 'antd';
 import { CalendarOutlined, ClockCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { getMyStudentSchedule } from '../../features/me/api';
 
 const { Title } = Typography;
 
-const DAYS = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-
-// TODO: Replace with real API data
-const schedule = [
-  { day: 'Dushanba', time: '09:00 - 10:30', group: 'English B1', teacher: 'Ali Valiyev', room: 'Room 1' },
-  { day: 'Dushanba', time: '14:00 - 15:30', group: 'Math Advanced', teacher: 'Olim Karimov', room: 'Room 3' },
-  { day: 'Chorshanba', time: '09:00 - 10:30', group: 'English B1', teacher: 'Ali Valiyev', room: 'Room 1' },
-  { day: 'Chorshanba', time: '14:00 - 15:30', group: 'Math Advanced', teacher: 'Olim Karimov', room: 'Room 3' },
-  { day: 'Juma', time: '09:00 - 10:30', group: 'English B1', teacher: 'Ali Valiyev', room: 'Room 1' },
-  { day: 'Juma', time: '14:00 - 15:30', group: 'Math Advanced', teacher: 'Olim Karimov', room: 'Room 3' },
-];
-
 const StudentSchedule: React.FC = () => {
+  const { data, isLoading } = useQuery({ queryKey: ['my-student-schedule'], queryFn: getMyStudentSchedule });
+  if (isLoading) return <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>;
+  if (!data || data.length === 0) return <Empty description="Jadval topilmadi" />;
+
   return (
     <>
-      <Title level={4} style={{ marginBottom: 20 }}>
-        <CalendarOutlined style={{ color: '#6366f1', marginRight: 8 }} />
-        Dars jadvali
-      </Title>
-
-      {DAYS.map((day) => {
-        const daySchedule = schedule.filter((s) => s.day === day);
-        if (daySchedule.length === 0) return null;
-
-        return (
-          <Card
-            key={day}
-            size="small"
-            title={<Tag color="blue" style={{ fontSize: 13, padding: '2px 12px' }}>{day}</Tag>}
-            style={{ marginBottom: 12, borderRadius: 14, border: '1px solid #e2e8f0' }}
-            styles={{ body: { padding: '8px 16px' } }}
-          >
-            <List
-              dataSource={daySchedule}
-              renderItem={(item) => (
-                <List.Item style={{ padding: '10px 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
-                    <div style={{ color: '#6366f1', minWidth: 110 }}>
-                      <ClockCircleOutlined style={{ marginRight: 6 }} />
-                      <strong>{item.time}</strong>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{item.group}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>{item.teacher}</div>
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: 12 }}>
-                      <EnvironmentOutlined style={{ marginRight: 4 }} />
-                      {item.room}
-                    </div>
-                  </div>
-                </List.Item>
-              )}
-            />
-          </Card>
-        );
-      })}
+      <Title level={4} style={{ marginBottom: 20 }}><CalendarOutlined style={{ color: '#6366f1', marginRight: 8 }} />Dars jadvali</Title>
+      {data.map((item: any, i: number) => (
+        <Card key={i} size="small" style={{ marginBottom: 12, borderRadius: 14, border: '1px solid #e2e8f0' }}
+          styles={{ body: { padding: '12px 16px' } }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ color: '#6366f1', minWidth: 110 }}>
+              <ClockCircleOutlined style={{ marginRight: 6 }} />
+              <strong>{item.startTime} - {item.endTime}</strong>
+            </div>
+            <div style={{ flex: 1, minWidth: 120 }}>
+              <div style={{ fontWeight: 600 }}>{item.groupName}</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>{item.teacher}</div>
+            </div>
+            <div>
+              <Tag color="blue">{item.dayType}</Tag>
+              {item.room && <span style={{ fontSize: 11, color: '#94a3b8' }}><EnvironmentOutlined /> {item.room}</span>}
+            </div>
+          </div>
+        </Card>
+      ))}
     </>
   );
 };

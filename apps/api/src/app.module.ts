@@ -34,6 +34,7 @@ import { PdfModule } from './modules/pdf/pdf.module';
 import { DailyReportModule } from './modules/daily-report/daily-report.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { ProblemModule } from './modules/problem/problem.module';
+import { MeModule } from './modules/me/me.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ProblemModule } from './modules/problem/problem.module';
     DailyReportModule,
     SchedulerModule,
     ProblemModule,
+    MeModule,
   ],
 })
 export class AppModule {}
