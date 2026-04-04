@@ -4,6 +4,7 @@ import { IsString, IsNotEmpty, IsOptional, IsEnum, MinLength } from 'class-valid
 export enum RoleEnum {
   CEO = 'CEO',
   ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
   TEACHER = 'TEACHER',
   STUDENT = 'STUDENT',
 }
