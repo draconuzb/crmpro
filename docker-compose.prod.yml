@@ -54,25 +54,25 @@ services:
       - backend
     # Port NOT exposed to host — only accessible via nginx
 
-  # ── Telegram Bot ──
-  bot:
-    build:
-      context: .
-      dockerfile: apps/bot/Dockerfile
-    restart: always
-    environment:
-      NODE_ENV: production
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      API_BASE_URL: http://api:3000
-      BOT_SERVICE_PHONE: ${BOT_SERVICE_PHONE}
-      BOT_SERVICE_PASSWORD: ${BOT_SERVICE_PASSWORD}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      CEO_TELEGRAM_ID: ${CEO_TELEGRAM_ID:-}
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - backend
+  # ── Telegram Bot (uncomment when TELEGRAM_BOT_TOKEN is set) ──
+  # bot:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/bot/Dockerfile
+  #   restart: always
+  #   environment:
+  #     NODE_ENV: production
+  #     TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+  #     API_BASE_URL: http://api:3000
+  #     BOT_SERVICE_PHONE: ${BOT_SERVICE_PHONE}
+  #     BOT_SERVICE_PASSWORD: ${BOT_SERVICE_PASSWORD}
+  #     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  #     CEO_TELEGRAM_ID: ${CEO_TELEGRAM_ID:-}
+  #   depends_on:
+  #     api:
+  #       condition: service_healthy
+  #   networks:
+  #     - backend
 
   # ── Frontend (Nginx) ──
   web:
