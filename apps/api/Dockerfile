@@ -36,11 +36,11 @@ COPY --from=builder /app/apps/api/dist apps/api/dist
 COPY apps/api/prisma apps/api/prisma
 COPY packages/shared packages/shared
 
-RUN cd apps/api && npx prisma generate
+RUN cd apps/api && npx prisma@5.22.0 generate
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "cd apps/api && npx prisma@5.22.0 migrate deploy && node dist/src/main.js"]
