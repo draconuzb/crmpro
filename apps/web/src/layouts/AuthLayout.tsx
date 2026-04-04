@@ -17,7 +17,7 @@ const AuthLayout: React.FC = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 24,
+          padding: '24px 16px',
         }}
       >
         <div style={{ width: 420, maxWidth: '100%' }}>
@@ -53,7 +53,7 @@ const AuthLayout: React.FC = () => {
               border: 'none',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
             }}
-            styles={{ body: { padding: '32px 32px 24px' } }}
+            styles={{ body: { padding: '28px 24px 20px' } }}
           >
             <Outlet />
           </Card>

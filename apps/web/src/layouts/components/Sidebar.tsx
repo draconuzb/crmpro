@@ -27,9 +27,10 @@ type MenuItem = Required<MenuProps>['items'][number];
 interface SidebarProps {
   collapsed: boolean;
   onCollapse: (v: boolean) => void;
+  onNavigate?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse, onNavigate }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -161,6 +162,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
   const onClick: MenuProps['onClick'] = ({ key }) => {
     if (key.startsWith('/')) {
       navigate(key);
+      onNavigate?.();
     }
   };
 

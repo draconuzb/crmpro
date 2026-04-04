@@ -1,7 +1,7 @@
 import { Layout, Select, Dropdown, Space, Avatar, Typography, Button, Badge } from 'antd';
 import {
   UserOutlined, LogoutOutlined, GlobalOutlined, MenuFoldOutlined,
-  MenuUnfoldOutlined, BellOutlined,
+  MenuUnfoldOutlined, BellOutlined, MenuOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { MenuProps } from 'antd';
@@ -13,9 +13,10 @@ const { Text } = Typography;
 interface HeaderBarProps {
   collapsed: boolean;
   onToggle: () => void;
+  isMobile?: boolean;
 }
 
-const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle }) => {
+const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = false }) => {
   const { i18n, t } = useTranslation();
   const { user, activeBranchId, logout, setActiveBranch } = useAuth();
 
@@ -36,14 +37,22 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle }) => {
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'role',
-      label: (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {user?.role}
-        </Text>
-      ),
+      label: <Text type="secondary" style={{ fontSize: 12 }}>{user?.role}</Text>,
       disabled: true,
     },
     { type: 'divider' },
+    ...(!isMobile ? [] : [
+      {
+        key: 'lang',
+        label: 'Til',
+        children: [
+          { key: 'uz', label: 'UZ', onClick: () => handleLanguageChange('uz') },
+          { key: 'en', label: 'EN', onClick: () => handleLanguageChange('en') },
+          { key: 'ru', label: 'RU', onClick: () => handleLanguageChange('ru') },
+        ],
+      } as any,
+      { type: 'divider' } as any,
+    ]),
     {
       key: 'logout',
       icon: <LogoutOutlined />,
@@ -61,7 +70,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle }) => {
     <Header
       style={{
         background: '#fff',
-        padding: '0 24px',
+        padding: isMobile ? '0 12px' : '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -69,65 +78,77 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle }) => {
         position: 'sticky',
         top: 0,
         zIndex: 10,
-        height: 64,
+        height: isMobile ? 56 : 64,
         boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
       }}
     >
-      <Space size="middle">
+      <Space size={isMobile ? 8 : 12}>
         <Button
           type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          icon={isMobile ? <MenuOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
           onClick={onToggle}
           style={{ fontSize: 18, color: '#475569' }}
         />
-        <Select
-          placeholder={t('header.selectBranch', 'Filial tanlang')}
-          style={{ width: 200 }}
-          value={activeBranchId ?? undefined}
-          onChange={handleBranchChange}
-          options={branchOptions}
-          variant="borderless"
-        />
+        {!isMobile && (
+          <Select
+            placeholder={t('header.selectBranch', 'Filial tanlang')}
+            style={{ width: 200 }}
+            value={activeBranchId ?? undefined}
+            onChange={handleBranchChange}
+            options={branchOptions}
+            variant="borderless"
+          />
+        )}
+        {isMobile && branchOptions.length > 1 && (
+          <Select
+            value={activeBranchId ?? undefined}
+            onChange={handleBranchChange}
+            options={branchOptions}
+            variant="borderless"
+            style={{ maxWidth: 140 }}
+            popupMatchSelectWidth={false}
+          />
+        )}
       </Space>
 
-      <Space size={16}>
-        <Select
-          value={i18n.language}
-          onChange={handleLanguageChange}
-          style={{ width: 76 }}
-          suffixIcon={<GlobalOutlined style={{ color: '#6366f1' }} />}
-          variant="borderless"
-          options={[
-            { value: 'uz', label: 'UZ' },
-            { value: 'en', label: 'EN' },
-            { value: 'ru', label: 'RU' },
-          ]}
-        />
+      <Space size={isMobile ? 4 : 16}>
+        {!isMobile && (
+          <Select
+            value={i18n.language}
+            onChange={handleLanguageChange}
+            style={{ width: 76 }}
+            suffixIcon={<GlobalOutlined style={{ color: '#6366f1' }} />}
+            variant="borderless"
+            options={[
+              { value: 'uz', label: 'UZ' },
+              { value: 'en', label: 'EN' },
+              { value: 'ru', label: 'RU' },
+            ]}
+          />
+        )}
 
-        <Badge count={0} size="small">
-          <Button type="text" icon={<BellOutlined />} style={{ color: '#475569' }} />
-        </Badge>
+        {!isMobile && (
+          <Badge count={0} size="small">
+            <Button type="text" icon={<BellOutlined />} style={{ color: '#475569' }} />
+          </Badge>
+        )}
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-          <Space
-            style={{
-              cursor: 'pointer',
-              padding: '4px 12px',
-              borderRadius: 10,
-              transition: 'background 0.2s',
-            }}
-          >
+          <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 10 }}>
             <Avatar
               src={user?.avatar}
               icon={!user?.avatar ? <UserOutlined /> : undefined}
+              size={isMobile ? 32 : 36}
               style={{
                 background: user?.avatar ? undefined : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               }}
             />
-            <div style={{ lineHeight: 1.3 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>{displayName}</div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>{user?.role}</div>
-            </div>
+            {!isMobile && (
+              <div style={{ lineHeight: 1.3 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>{displayName}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>{user?.role}</div>
+              </div>
+            )}
           </Space>
         </Dropdown>
       </Space>

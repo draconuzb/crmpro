@@ -84,7 +84,7 @@ const StudentLayout: React.FC = () => {
       </Header>
 
       {/* Content */}
-      <Content style={{ padding: '20px 16px 100px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+      <Content style={{ padding: '16px 12px 100px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
         <Outlet />
       </Content>
 
@@ -99,7 +99,7 @@ const StudentLayout: React.FC = () => {
           borderTop: '1px solid #e2e8f0',
           display: 'flex',
           justifyContent: 'space-around',
-          padding: '8px 0 12px',
+          padding: '8px 0 max(12px, env(safe-area-inset-bottom))',
           zIndex: 100,
           boxShadow: '0 -2px 8px rgba(0,0,0,0.04)',
         }}
@@ -117,8 +117,11 @@ const StudentLayout: React.FC = () => {
                 cursor: 'pointer',
                 color: isActive ? '#6366f1' : '#94a3b8',
                 fontSize: 20,
-                transition: 'color 0.2s',
+                transition: 'all 0.2s',
                 flex: 1,
+                padding: '4px 0',
+                minHeight: 44,
+                justifyContent: 'center',
               }}
             >
               {item.icon}
