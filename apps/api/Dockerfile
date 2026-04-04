@@ -15,7 +15,8 @@ RUN pnpm install --no-frozen-lockfile
 COPY apps/api/ apps/api/
 COPY packages/shared/ packages/shared/
 
-RUN cd apps/api && npx nest build
+ENV NODE_OPTIONS="--max-old-space-size=512"
+RUN cd apps/api && pnpm run build
 
 # Production stage
 FROM node:20-alpine

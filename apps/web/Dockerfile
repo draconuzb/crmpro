@@ -14,6 +14,7 @@ RUN pnpm install --no-frozen-lockfile
 COPY apps/web/ apps/web/
 COPY packages/shared/ packages/shared/
 
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN cd apps/web && npx vite build
 
 # Production — Nginx
