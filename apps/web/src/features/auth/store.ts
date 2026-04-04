@@ -9,7 +9,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   activeBranchId: number | null;
-  login: (phone: string, password: string) => Promise<void>;
+  login: (phone: string, password: string) => Promise<{ user: UserProfile }>;
   logout: () => void;
   setActiveBranch: (branchId: number) => void;
   refreshAuth: () => Promise<void>;
@@ -81,6 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveBranchId(branchId);
       api.defaults.headers.common['x-branch-id'] = String(branchId);
     }
+
+    return { user: profile };
   }, []);
 
   const logout = useCallback(() => {

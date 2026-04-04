@@ -4,6 +4,7 @@ import { LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/hooks';
+import { getHomeRoute } from '../../lib/roles';
 
 const { Text } = Typography;
 
@@ -15,11 +16,11 @@ interface LoginForm {
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  if (isAuthenticated) {
-    navigate('/dashboard', { replace: true });
+  if (isAuthenticated && user) {
+    navigate(getHomeRoute(user.role), { replace: true });
     return null;
   }
 
@@ -27,9 +28,9 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const phone = values.phone.startsWith('+998') ? values.phone : `+998${values.phone.replace(/\D/g, '')}`;
-      await login(phone, values.password);
+      const result = await login(phone, values.password);
       message.success('Muvaffaqiyatli kirdingiz!');
-      navigate('/dashboard', { replace: true });
+      navigate(getHomeRoute(result?.user?.role || 'CEO'), { replace: true });
     } catch (error: unknown) {
       const msg =
         error instanceof Error ? error.message : t('login.error', "Kirish xatosi.");

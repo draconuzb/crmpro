@@ -3,9 +3,16 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import AuthLayout from '@/layouts/AuthLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import StudentLayout from '@/layouts/StudentLayout';
+import TeacherLayout from '@/layouts/TeacherLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import RoleRedirect from '@/components/RoleRedirect';
+import { ADMIN_ROLES, TEACHER_ROLES, STUDENT_ROLES } from '@/lib/roles';
 
+// ─── Auth ────────────────────────────────────────
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
+
+// ─── Admin Pages (CEO / ADMIN / MANAGER) ─────────
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const LeadsKanbanPage = lazy(() => import('@/pages/leads/LeadsKanbanPage'));
 const TeacherListPage = lazy(() => import('@/pages/teachers/TeacherListPage'));
@@ -38,13 +45,29 @@ const OfficeSettingsPage = lazy(() => import('@/pages/settings/OfficeSettingsPag
 const FormsPage = lazy(() => import('@/pages/settings/FormsPage'));
 const BlogPage = lazy(() => import('@/pages/settings/BlogPage'));
 const TagsPage = lazy(() => import('@/pages/settings/TagsPage'));
-
-// CRMPro new pages
 const KpiDashboardPage = lazy(() => import('@/pages/kpi/KpiDashboardPage'));
 const HrStaffPage = lazy(() => import('@/pages/hr/HrStaffPage'));
 const HrGoalsPage = lazy(() => import('@/pages/hr/HrGoalsPage'));
 const AiInsightsPage = lazy(() => import('@/pages/ai/AiInsightsPage'));
 const ProblemsPage = lazy(() => import('@/pages/problems/ProblemsPage'));
+
+// ─── Student Portal ──────────────────────────────
+const StudentDashboard = lazy(() => import('@/pages/student-portal/StudentDashboard'));
+const StudentSchedule = lazy(() => import('@/pages/student-portal/StudentSchedule'));
+const StudentGrades = lazy(() => import('@/pages/student-portal/StudentGrades'));
+const StudentAttendance = lazy(() => import('@/pages/student-portal/StudentAttendance'));
+const StudentBalance = lazy(() => import('@/pages/student-portal/StudentBalance'));
+const StudentShop = lazy(() => import('@/pages/student-portal/StudentShop'));
+const StudentProfile = lazy(() => import('@/pages/student-portal/StudentProfile'));
+
+// ─── Teacher Portal ─────────────────────────────
+const TeacherDashboard = lazy(() => import('@/pages/teacher-portal/TeacherDashboard'));
+const TeacherGroups = lazy(() => import('@/pages/teacher-portal/TeacherGroups'));
+const TeacherGroupDetail = lazy(() => import('@/pages/teacher-portal/TeacherGroupDetail'));
+const TeacherSchedule = lazy(() => import('@/pages/teacher-portal/TeacherSchedule'));
+const TeacherGradesPage = lazy(() => import('@/pages/teacher-portal/TeacherGrades'));
+const TeacherSalary = lazy(() => import('@/pages/teacher-portal/TeacherSalary'));
+const TeacherProfile = lazy(() => import('@/pages/teacher-portal/TeacherProfile'));
 
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: 48 }}>
@@ -56,15 +79,14 @@ const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
-        {/* Public auth routes */}
+        {/* ═══ Public ═══ */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
         </Route>
 
-        {/* Protected routes */}
-        <Route element={<ProtectedRoute />}>
+        {/* ═══ Admin Portal (CEO / ADMIN / MANAGER) ═══ */}
+        <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
           <Route element={<DashboardLayout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/leads" element={<LeadsKanbanPage />} />
             <Route path="/teachers" element={<TeacherListPage />} />
@@ -97,8 +119,6 @@ const AppRoutes: React.FC = () => {
             <Route path="/settings/forms" element={<FormsPage />} />
             <Route path="/settings/blog" element={<BlogPage />} />
             <Route path="/settings/tags" element={<TagsPage />} />
-
-            {/* CRMPro new routes */}
             <Route path="/kpi" element={<KpiDashboardPage />} />
             <Route path="/hr/staff" element={<HrStaffPage />} />
             <Route path="/hr/goals" element={<HrGoalsPage />} />
@@ -106,6 +126,37 @@ const AppRoutes: React.FC = () => {
             <Route path="/problems" element={<ProblemsPage />} />
           </Route>
         </Route>
+
+        {/* ═══ Teacher Portal ═══ */}
+        <Route element={<ProtectedRoute allowedRoles={TEACHER_ROLES} />}>
+          <Route element={<TeacherLayout />}>
+            <Route path="/t/dashboard" element={<TeacherDashboard />} />
+            <Route path="/t/groups" element={<TeacherGroups />} />
+            <Route path="/t/groups/:id" element={<TeacherGroupDetail />} />
+            <Route path="/t/attendance" element={<TeacherDashboard />} />
+            <Route path="/t/grades" element={<TeacherGradesPage />} />
+            <Route path="/t/schedule" element={<TeacherSchedule />} />
+            <Route path="/t/salary" element={<TeacherSalary />} />
+            <Route path="/t/profile" element={<TeacherProfile />} />
+          </Route>
+        </Route>
+
+        {/* ═══ Student Portal ═══ */}
+        <Route element={<ProtectedRoute allowedRoles={STUDENT_ROLES} />}>
+          <Route element={<StudentLayout />}>
+            <Route path="/s/dashboard" element={<StudentDashboard />} />
+            <Route path="/s/schedule" element={<StudentSchedule />} />
+            <Route path="/s/grades" element={<StudentGrades />} />
+            <Route path="/s/attendance" element={<StudentAttendance />} />
+            <Route path="/s/balance" element={<StudentBalance />} />
+            <Route path="/s/shop" element={<StudentShop />} />
+            <Route path="/s/profile" element={<StudentProfile />} />
+          </Route>
+        </Route>
+
+        {/* ═══ Catch-all: role-based redirect ═══ */}
+        <Route path="/" element={<RoleRedirect />} />
+        <Route path="*" element={<RoleRedirect />} />
       </Routes>
     </Suspense>
   );
