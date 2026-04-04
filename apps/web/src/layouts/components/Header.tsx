@@ -1,11 +1,13 @@
-import { Layout, Select, Dropdown, Space, Avatar, Typography, Button, Badge } from 'antd';
+import { Layout, Select, Dropdown, Space, Avatar, Typography, Button } from 'antd';
 import {
   UserOutlined, LogoutOutlined, GlobalOutlined, MenuFoldOutlined,
-  MenuUnfoldOutlined, BellOutlined, MenuOutlined,
+  MenuUnfoldOutlined, MenuOutlined, SunOutlined, MoonOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../features/auth/hooks';
+import { useThemeMode } from '../../contexts/ThemeContext';
+import NotificationBell from '../../components/NotificationBell';
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -19,6 +21,7 @@ interface HeaderBarProps {
 const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = false }) => {
   const { i18n, t } = useTranslation();
   const { user, activeBranchId, logout, setActiveBranch } = useAuth();
+  const { isDark, toggleTheme } = useThemeMode();
 
   const handleLanguageChange = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -66,15 +69,21 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = f
     ? `${user.firstName} ${user.lastName || ''}`.trim()
     : t('header.admin', 'Admin');
 
+  const headerBg = isDark ? '#1f1f1f' : '#fff';
+  const borderColor = isDark ? '#303030' : '#e2e8f0';
+  const textColor = isDark ? '#a0aec0' : '#475569';
+  const nameColor = isDark ? '#e2e8f0' : '#1e293b';
+  const roleColor = isDark ? '#718096' : '#94a3b8';
+
   return (
     <Header
       style={{
-        background: '#fff',
+        background: headerBg,
         padding: isMobile ? '0 12px' : '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid #e2e8f0',
+        borderBottom: `1px solid ${borderColor}`,
         position: 'sticky',
         top: 0,
         zIndex: 10,
@@ -87,7 +96,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = f
           type="text"
           icon={isMobile ? <MenuOutlined /> : (collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />)}
           onClick={onToggle}
-          style={{ fontSize: 18, color: '#475569' }}
+          style={{ fontSize: 18, color: textColor }}
         />
         {!isMobile && (
           <Select
@@ -127,11 +136,15 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = f
           />
         )}
 
-        {!isMobile && (
-          <Badge count={0} size="small">
-            <Button type="text" icon={<BellOutlined />} style={{ color: '#475569' }} />
-          </Badge>
-        )}
+        <Button
+          type="text"
+          icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggleTheme}
+          style={{ color: isDark ? '#fadb14' : textColor, fontSize: 18 }}
+          title={isDark ? 'Light mode' : 'Dark mode'}
+        />
+
+        {!isMobile && <NotificationBell />}
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
           <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 10 }}>
@@ -145,8 +158,8 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, onToggle, isMobile = f
             />
             {!isMobile && (
               <div style={{ lineHeight: 1.3 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>{displayName}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>{user?.role}</div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: nameColor }}>{displayName}</div>
+                <div style={{ fontSize: 11, color: roleColor }}>{user?.role}</div>
               </div>
             )}
           </Space>

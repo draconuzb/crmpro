@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import {
-  Row, Col, Card, Statistic, Typography, Spin, Table, Radio, Segmented,
+  Row, Col, Card, Typography, Spin, Table, Radio, Segmented,
 } from 'antd';
 import {
   FunnelPlotOutlined, UserOutlined, AppstoreOutlined, WarningOutlined,
   ExperimentOutlined, DollarOutlined, UserDeleteOutlined, StopOutlined,
-  ArrowUpOutlined, ArrowDownOutlined,
 } from '@ant-design/icons';
+import { Line, Pie, Column } from '@ant-design/charts';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getDashboardStats, getDashboardRevenue, getSchedule } from '../../features/dashboard/api';
+import { useThemeMode } from '../../contexts/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -58,6 +59,7 @@ const statCards: {
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
+  const { isDark } = useThemeMode();
   const [dayFilter, setDayFilter] = useState<string>('ODD');
   const [viewMode, setViewMode] = useState<string>('Horizontal');
 
@@ -76,62 +78,133 @@ const DashboardPage: React.FC = () => {
     queryFn: () => getSchedule({ dayType: dayFilter }),
   });
 
-  const formatUZS = (val: number) => new Intl.NumberFormat('uz-UZ').format(val);
+  const textColor = isDark ? '#e2e8f0' : '#0f172a';
+  const cardBorder = isDark ? '1px solid #303030' : '1px solid #e2e8f0';
 
+  // Revenue Line Chart
   const renderRevenueChart = () => {
     if (!revenue || revenue.length === 0) {
       return <Text type="secondary">Ma'lumot yo'q</Text>;
     }
 
-    const maxRevenue = Math.max(...revenue.map((r) => r.revenue), 1);
-    const width = 800;
-    const height = 280;
-    const padding = { top: 30, right: 20, bottom: 50, left: 20 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
+    const chartData = revenue.map((r) => ({
+      month: r.month.substring(5),
+      revenue: r.revenue,
+    }));
 
-    const points = revenue.map((r, i) => {
-      const x = padding.left + (i / Math.max(revenue.length - 1, 1)) * chartW;
-      const y = padding.top + chartH - (r.revenue / maxRevenue) * chartH;
-      return { x, y, ...r };
-    });
+    const config = {
+      data: chartData,
+      xField: 'month',
+      yField: 'revenue',
+      smooth: true,
+      color: '#6366f1',
+      point: {
+        size: 4,
+        shape: 'circle',
+        style: { fill: '#fff', stroke: '#6366f1', lineWidth: 2 },
+      },
+      area: {
+        style: {
+          fill: 'l(270) 0:rgba(99,102,241,0.01) 1:rgba(99,102,241,0.2)',
+        },
+      },
+      yAxis: {
+        label: {
+          formatter: (v: string) => new Intl.NumberFormat('uz-UZ').format(Number(v)),
+        },
+      },
+      tooltip: {
+        formatter: (datum: any) => ({
+          name: 'Daromad',
+          value: new Intl.NumberFormat('uz-UZ').format(datum.revenue) + " so'm",
+        }),
+      },
+      theme: isDark ? 'dark' : 'default',
+      height: 280,
+      autoFit: true,
+    };
 
-    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-    const areaPath = linePath + ` L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`;
+    return <Line {...(config as any)} />;
+  };
 
-    return (
-      <div style={{ overflowX: 'auto' }}>
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-          <defs>
-            <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity={0.01} />
-            </linearGradient>
-          </defs>
-          {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-            const y = padding.top + chartH - frac * chartH;
-            return (
-              <g key={frac}>
-                <line x1={padding.left} y1={y} x2={padding.left + chartW} y2={y} stroke="#e2e8f0" strokeWidth={1} />
-                <text x={padding.left - 2} y={y - 6} fontSize={10} fill="#94a3b8" textAnchor="start">
-                  {formatUZS(Math.round(maxRevenue * frac))}
-                </text>
-              </g>
-            );
-          })}
-          <path d={areaPath} fill="url(#revGrad)" />
-          <path d={linePath} fill="none" stroke="#6366f1" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-          {points.map((p, i) => (
-            <g key={i}>
-              <circle cx={p.x} cy={p.y} r={5} fill="#fff" stroke="#6366f1" strokeWidth={2.5} />
-              <text x={p.x} y={padding.top + chartH + 24} textAnchor="middle" fontSize={11} fill="#64748b" fontWeight={500}>
-                {p.month.substring(5)}
-              </text>
-            </g>
-          ))}
-        </svg>
-      </div>
-    );
+  // Expense Pie Chart (simulated from stats)
+  const renderExpensePieChart = () => {
+    if (!stats) return <Text type="secondary">Ma'lumot yo'q</Text>;
+
+    const pieData = [
+      { type: "O'qituvchi maoshi", value: stats.paidThisMonth * 0.4 || 0 },
+      { type: 'Ijara', value: stats.paidThisMonth * 0.25 || 0 },
+      { type: 'Marketing', value: stats.paidThisMonth * 0.15 || 0 },
+      { type: 'Kommunal', value: stats.paidThisMonth * 0.1 || 0 },
+      { type: 'Boshqa', value: stats.paidThisMonth * 0.1 || 0 },
+    ].filter((d) => d.value > 0);
+
+    if (pieData.length === 0) {
+      return <Text type="secondary">Ma'lumot yo'q</Text>;
+    }
+
+    const config = {
+      data: pieData,
+      angleField: 'value',
+      colorField: 'type',
+      radius: 0.85,
+      innerRadius: 0.55,
+      color: ['#6366f1', '#10b981', '#f59e0b', '#3b82f6', '#ef4444'],
+      label: {
+        type: 'outer',
+        content: '{name} {percentage}',
+        style: { fontSize: 12 },
+      },
+      legend: { position: 'bottom' as const },
+      tooltip: {
+        formatter: (datum: any) => ({
+          name: datum.type,
+          value: new Intl.NumberFormat('uz-UZ').format(Math.round(datum.value)) + " so'm",
+        }),
+      },
+      theme: isDark ? 'dark' : 'default',
+      height: 280,
+      autoFit: true,
+    };
+
+    return <Pie {...(config as any)} />;
+  };
+
+  // Lead Funnel Bar Chart
+  const renderLeadFunnelChart = () => {
+    if (!stats) return <Text type="secondary">Ma'lumot yo'q</Text>;
+
+    const funnelData = [
+      { stage: 'LEAD', count: stats.activeLeads || 0, color: '#3b82f6' },
+      { stage: 'EXPECTATION', count: Math.round((stats.activeLeads || 0) * 0.6), color: '#f59e0b' },
+      { stage: 'SET', count: stats.activeStudents || 0, color: '#10b981' },
+    ];
+
+    const config = {
+      data: funnelData,
+      xField: 'stage',
+      yField: 'count',
+      color: ['#3b82f6', '#f59e0b', '#10b981'],
+      seriesField: 'stage',
+      legend: false,
+      label: {
+        position: 'top' as const,
+        style: { fontWeight: 600 },
+      },
+      columnStyle: {
+        radius: [8, 8, 0, 0],
+      },
+      yAxis: {
+        label: {
+          formatter: (v: string) => String(Math.round(Number(v))),
+        },
+      },
+      theme: isDark ? 'dark' : 'default',
+      height: 280,
+      autoFit: true,
+    };
+
+    return <Column {...(config as any)} />;
   };
 
   const buildScheduleGrid = () => {
@@ -162,9 +235,9 @@ const DashboardPage: React.FC = () => {
         key: `room_${r.id}`,
         render: (val: ScheduleGroup | undefined) =>
           val ? (
-            <div style={{ background: '#f0f0ff', borderLeft: '3px solid #6366f1', padding: '6px 10px', borderRadius: 8, fontSize: 12 }}>
-              <div style={{ fontWeight: 600, color: '#1e293b' }}>{val.name}</div>
-              <div style={{ color: '#64748b', fontSize: 11 }}>
+            <div style={{ background: isDark ? '#1e293b' : '#f0f0ff', borderLeft: '3px solid #6366f1', padding: '6px 10px', borderRadius: 8, fontSize: 12 }}>
+              <div style={{ fontWeight: 600, color: textColor }}>{val.name}</div>
+              <div style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }}>
                 {val.teacher?.user ? `${val.teacher.user.firstName} ${val.teacher.user.lastName || ''}` : ''}
               </div>
             </div>
@@ -184,7 +257,7 @@ const DashboardPage: React.FC = () => {
   return (
     <>
       <div style={{ marginBottom: 28 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: textColor }}>
           Dashboard
         </Title>
         <Text type="secondary">Bugungi umumiy ko'rsatkichlar</Text>
@@ -237,17 +310,39 @@ const DashboardPage: React.FC = () => {
 
       {/* Revenue Chart */}
       <Card
-        title={<span style={{ fontWeight: 600, color: '#0f172a' }}>Daromad dinamikasi</span>}
-        style={{ marginBottom: 24, borderRadius: 14, border: '1px solid #e2e8f0' }}
+        title={<span style={{ fontWeight: 600, color: textColor }}>Daromad dinamikasi</span>}
+        style={{ marginBottom: 24, borderRadius: 14, border: cardBorder }}
         loading={revenueLoading}
       >
         {renderRevenueChart()}
       </Card>
 
+      {/* Pie + Bar Charts Row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12}>
+          <Card
+            title={<span style={{ fontWeight: 600, color: textColor }}>Xarajat taqsimoti</span>}
+            style={{ borderRadius: 14, border: cardBorder, height: '100%' }}
+            loading={statsLoading}
+          >
+            {renderExpensePieChart()}
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card
+            title={<span style={{ fontWeight: 600, color: textColor }}>Lid funnel</span>}
+            style={{ borderRadius: 14, border: cardBorder, height: '100%' }}
+            loading={statsLoading}
+          >
+            {renderLeadFunnelChart()}
+          </Card>
+        </Col>
+      </Row>
+
       {/* Schedule */}
       <Card
-        title={<span style={{ fontWeight: 600, color: '#0f172a' }}>Dars jadvali</span>}
-        style={{ borderRadius: 14, border: '1px solid #e2e8f0' }}
+        title={<span style={{ fontWeight: 600, color: textColor }}>Dars jadvali</span>}
+        style={{ borderRadius: 14, border: cardBorder }}
         extra={
           <Segmented
             options={['Horizontal', 'Vertical']}

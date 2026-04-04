@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Layout, Drawer } from 'antd';
 import Sidebar from './components/Sidebar';
 import HeaderBar from './components/Header';
+import { useThemeMode } from '../contexts/ThemeContext';
 
 const { Content, Sider } = Layout;
 
@@ -12,6 +13,7 @@ const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < BREAKPOINT);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { isDark } = useThemeMode();
 
   useEffect(() => {
     const onResize = () => {
@@ -36,6 +38,8 @@ const DashboardLayout: React.FC = () => {
   };
 
   const siderWidth = collapsed ? 72 : 260;
+  const layoutBg = isDark ? '#141414' : '#f8fafc';
+  const contentBg = isDark ? '#1f1f1f' : '#fff';
 
   const siderContent = (
     <>
@@ -111,7 +115,7 @@ const DashboardLayout: React.FC = () => {
         style={{
           marginLeft: isMobile ? 0 : siderWidth,
           transition: 'margin-left 0.2s cubic-bezier(0.2, 0, 0, 1)',
-          background: '#f8fafc',
+          background: layoutBg,
         }}
       >
         <HeaderBar collapsed={collapsed} onToggle={handleToggle} isMobile={isMobile} />
@@ -119,7 +123,7 @@ const DashboardLayout: React.FC = () => {
           style={{
             margin: isMobile ? '12px 8px' : '24px 24px',
             padding: isMobile ? 16 : 28,
-            background: '#fff',
+            background: contentBg,
             borderRadius: isMobile ? 12 : 16,
             minHeight: 'calc(100vh - 64px - 48px)',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
