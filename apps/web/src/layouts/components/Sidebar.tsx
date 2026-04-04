@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu } from 'antd';
+import { Menu, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -17,13 +17,19 @@ import {
   SettingOutlined,
   RobotOutlined,
   WarningOutlined,
-  AimOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  collapsed: boolean;
+  onCollapse: (v: boolean) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -34,15 +40,16 @@ const Sidebar: React.FC = () => {
       icon: <DashboardOutlined />,
       label: t('sidebar.dashboard'),
     },
+    { type: 'divider' },
     {
       key: '/leads',
       icon: <FunnelPlotOutlined />,
       label: t('sidebar.leads'),
     },
     {
-      key: '/teachers',
-      icon: <TeamOutlined />,
-      label: t('sidebar.teachers'),
+      key: '/students',
+      icon: <UserOutlined />,
+      label: t('sidebar.students'),
     },
     {
       key: '/groups',
@@ -50,9 +57,47 @@ const Sidebar: React.FC = () => {
       label: t('sidebar.groups'),
     },
     {
-      key: '/students',
-      icon: <UserOutlined />,
-      label: t('sidebar.students'),
+      key: '/teachers',
+      icon: <TeamOutlined />,
+      label: t('sidebar.teachers'),
+    },
+    { type: 'divider' },
+    {
+      key: '/kpi',
+      icon: <TrophyOutlined />,
+      label: 'KPI',
+    },
+    {
+      key: '/ai',
+      icon: <RobotOutlined />,
+      label: 'AI Insights',
+    },
+    {
+      key: '/problems',
+      icon: <WarningOutlined />,
+      label: t('sidebar.problems', 'Muammolar'),
+    },
+    { type: 'divider' },
+    {
+      key: 'finance',
+      icon: <DollarOutlined />,
+      label: t('sidebar.finance'),
+      children: [
+        { key: '/finance/payments', label: t('sidebar.allPayments') },
+        { key: '/finance/withdraw', label: t('sidebar.withdraw') },
+        { key: '/finance/expenses', label: t('sidebar.totalExpenses') },
+        { key: '/finance/salaries', label: t('sidebar.salaries') },
+        { key: '/finance/debtors', label: t('sidebar.debtors') },
+      ],
+    },
+    {
+      key: 'hr',
+      icon: <TeamOutlined />,
+      label: 'HR',
+      children: [
+        { key: '/hr/staff', label: 'Xodimlar' },
+        { key: '/hr/goals', label: 'Maqsadlar' },
+      ],
     },
     {
       key: '/reminders',
@@ -74,42 +119,7 @@ const Sidebar: React.FC = () => {
       icon: <ScheduleOutlined />,
       label: t('sidebar.teacherAttendance'),
     },
-    {
-      key: '/kpi',
-      icon: <TrophyOutlined />,
-      label: 'KPI',
-    },
-    {
-      key: 'hr',
-      icon: <TeamOutlined />,
-      label: 'HR',
-      children: [
-        { key: '/hr/staff', label: 'Xodimlar' },
-        { key: '/hr/goals', label: 'Maqsadlar' },
-      ],
-    },
-    {
-      key: '/ai',
-      icon: <RobotOutlined />,
-      label: 'AI Insights',
-    },
-    {
-      key: '/problems',
-      icon: <WarningOutlined />,
-      label: 'Muammolar',
-    },
-    {
-      key: 'finance',
-      icon: <DollarOutlined />,
-      label: t('sidebar.finance'),
-      children: [
-        { key: '/finance/payments', label: t('sidebar.allPayments') },
-        { key: '/finance/withdraw', label: t('sidebar.withdraw') },
-        { key: '/finance/expenses', label: t('sidebar.totalExpenses') },
-        { key: '/finance/salaries', label: t('sidebar.salaries') },
-        { key: '/finance/debtors', label: t('sidebar.debtors') },
-      ],
-    },
+    { type: 'divider' },
     {
       key: 'reports',
       icon: <BarChartOutlined />,
@@ -160,14 +170,36 @@ const Sidebar: React.FC = () => {
   );
 
   return (
-    <Menu
-      theme="dark"
-      mode="inline"
-      selectedKeys={selectedKeys}
-      defaultOpenKeys={openKeys}
-      items={items}
-      onClick={onClick}
-    />
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 73px)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={selectedKeys}
+          defaultOpenKeys={openKeys}
+          items={items}
+          onClick={onClick}
+          style={{ border: 'none', background: 'transparent' }}
+        />
+      </div>
+
+      {/* Collapse toggle at bottom */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <Button
+          type="text"
+          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          onClick={() => onCollapse(!collapsed)}
+          style={{ color: '#64748b', width: '100%' }}
+        >
+          {!collapsed && 'Yig\'ish'}
+        </Button>
+      </div>
+    </div>
   );
 };
 

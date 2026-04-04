@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message, Typography } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/hooks';
+
+const { Text } = Typography;
 
 interface LoginForm {
   phone: string;
@@ -16,7 +18,6 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // If already authenticated, redirect
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true });
     return null;
@@ -27,11 +28,11 @@ const LoginPage: React.FC = () => {
     try {
       const phone = values.phone.startsWith('+998') ? values.phone : `+998${values.phone.replace(/\D/g, '')}`;
       await login(phone, values.password);
-      message.success(t('login.success', 'Login successful'));
+      message.success('Muvaffaqiyatli kirdingiz!');
       navigate('/dashboard', { replace: true });
     } catch (error: unknown) {
       const msg =
-        error instanceof Error ? error.message : t('login.error', 'Login failed. Please check your credentials.');
+        error instanceof Error ? error.message : t('login.error', "Kirish xatosi.");
       message.error(msg);
     } finally {
       setLoading(false);
@@ -39,29 +40,60 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <Form<LoginForm> layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
-      <Form.Item
-        name="phone"
-        label={t('login.phone', 'Phone')}
-        rules={[{ required: true, message: t('login.phoneRequired', 'Please enter your phone number') }]}
-      >
-        <Input addonBefore="+998" placeholder="90 123 45 67" maxLength={12} />
-      </Form.Item>
+    <>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <Text style={{ fontSize: 15, color: '#475569' }}>
+          Hisobingizga kiring
+        </Text>
+      </div>
 
-      <Form.Item
-        name="password"
-        label={t('login.password', 'Password')}
-        rules={[{ required: true, message: t('login.passwordRequired', 'Please enter your password') }]}
-      >
-        <Input.Password prefix={<LockOutlined />} placeholder="********" />
-      </Form.Item>
+      <Form<LoginForm> layout="vertical" onFinish={onFinish} autoComplete="off" size="large">
+        <Form.Item
+          name="phone"
+          label={<span style={{ fontWeight: 500, color: '#334155' }}>Telefon raqam</span>}
+          rules={[{ required: true, message: 'Telefon raqamingizni kiriting' }]}
+        >
+          <Input
+            addonBefore={<span style={{ color: '#6366f1', fontWeight: 600 }}>+998</span>}
+            placeholder="90 123 45 67"
+            maxLength={12}
+            style={{ borderRadius: 10 }}
+          />
+        </Form.Item>
 
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Button type="primary" htmlType="submit" block loading={loading}>
-          {t('login.submit', 'Login')}
-        </Button>
-      </Form.Item>
-    </Form>
+        <Form.Item
+          name="password"
+          label={<span style={{ fontWeight: 500, color: '#334155' }}>Parol</span>}
+          rules={[{ required: true, message: 'Parolingizni kiriting' }]}
+        >
+          <Input.Password
+            prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Parolingiz"
+            style={{ borderRadius: 10 }}
+          />
+        </Form.Item>
+
+        <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            loading={loading}
+            style={{
+              height: 46,
+              borderRadius: 10,
+              fontWeight: 600,
+              fontSize: 15,
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+            }}
+          >
+            Kirish
+          </Button>
+        </Form.Item>
+      </Form>
+    </>
   );
 };
 

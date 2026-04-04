@@ -737,7 +737,7 @@ export class FinanceService {
 
   async getFinanceSummaryByCategory(branchId: number) {
     const categories = await this.getCategories(branchId);
-    const result = [];
+    const result: any[] = [];
 
     for (const cat of categories) {
       const [payments, withdrawals] = await Promise.all([
