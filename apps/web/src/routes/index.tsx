@@ -50,6 +50,8 @@ const HrStaffPage = lazy(() => import('@/pages/hr/HrStaffPage'));
 const HrGoalsPage = lazy(() => import('@/pages/hr/HrGoalsPage'));
 const AiInsightsPage = lazy(() => import('@/pages/ai/AiInsightsPage'));
 const ProblemsPage = lazy(() => import('@/pages/problems/ProblemsPage'));
+const AnalyticsPage = lazy(() => import('@/pages/analytics/CeoDashboardPage'));
+const TahlilPage = lazy(() => import('@/pages/analytics/TahlilPage'));
 
 // ─── Student Portal ──────────────────────────────
 const StudentDashboard = lazy(() => import('@/pages/student-portal/StudentDashboard'));
@@ -124,6 +126,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/hr/goals" element={<HrGoalsPage />} />
             <Route path="/ai" element={<AiInsightsPage />} />
             <Route path="/problems" element={<ProblemsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/tahlil" element={<TahlilPage />} />
           </Route>
         </Route>
 

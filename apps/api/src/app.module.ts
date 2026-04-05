@@ -36,6 +36,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { ProblemModule } from './modules/problem/problem.module';
 import { MeModule } from './modules/me/me.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     ProblemModule,
     MeModule,
     NotificationModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

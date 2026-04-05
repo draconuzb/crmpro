@@ -12,7 +12,7 @@ import {
   CheckSquareOutlined,
   ScheduleOutlined,
   DollarOutlined,
-  BarChartOutlined,
+  BarChartOutlined, RiseOutlined,
   TrophyOutlined,
   SettingOutlined,
   RobotOutlined,
@@ -40,6 +40,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onCollapse, onNavigate }) 
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: t('sidebar.dashboard'),
+    },
+    {
+      key: "/analytics",
+      icon: <BarChartOutlined />,
+      label: "Tahlil",
+    },
+    {
+      key: "/tahlil",
+      icon: <RiseOutlined />,
+      label: "Chuqur tahlil",
     },
     { type: 'divider' },
     {
