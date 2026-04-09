@@ -1,0 +1,31 @@
+node_modules/
+dist/
+packages/*/dist/
+apps/*/dist/
+.turbo/
+.env
+.env.production
+*.log
+.DS_Store
+coverage/
+.idea/
+.vscode/
+
+.env.local
+.env.*.local
+.pnpm-store/
+
+# Security — never commit keys
+*.pem
+*.key
+*.cert
+*.p12
+*.bak
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# OS files
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,15 @@
+node_modules
+.turbo
+.git
+.github
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+*.md
+coverage
+.idea
+.vscode
+.DS_Store

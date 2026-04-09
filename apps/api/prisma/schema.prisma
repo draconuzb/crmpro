@@ -1,0 +1,985 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// BRANCH (multi-tenancy)
+model Branch {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        UserBranch[]
+  courses      Course[]
+  rooms        Room[]
+  groups       Group[]
+  leads        Lead[]
+  students     Student[]
+  payments     Payment[]
+  withdrawals  Withdrawal[]
+  expenses     Expense[]
+  reminders    Reminder[]
+  tags         Tag[]
+  holidays     Holiday[]
+  smsSettings  SmsSettings?
+  voipSettings VoipSettings?
+  forms        Form[]
+  blogPosts    BlogPost[]
+  products     Product[]
+  orders       Order[]
+  configs      BranchConfig[]
+
+  // CRMPro new relations
+  leadStages        LeadStage[]
+  lessonPayments    LessonPayment[]
+  financeCategories FinanceCategory[]
+  kpiTargets        KpiTarget[]
+  kpiAssignments    KpiAssignment[]
+  hrStaff           HrStaff[]
+  hrGoals           HrGoal[]
+  dailyReports      DailyReport[]
+  problems          Problem[]
+  emptyRooms        EmptyRoom[]
+  aiInsights        AiInsight[]
+  rejectionReasons  RejectionReason[]
+  studentDepartures StudentDeparture[]
+  leadDeletions     LeadDeletion[]
+}
+
+// AUTH & USERS
+enum Role {
+  CEO
+  ADMIN
+  MANAGER
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  phone       String    @unique
+  password    String
+  avatar      String?
+  role        Role
+  gender      String?
+  dateOfBirth DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  telegramId   String? @unique
+  telegramLang String? @default("uz")
+  botSections  Json?
+
+  branches      UserBranch[]
+  teacher       Teacher?
+  student       Student?
+  refreshTokens RefreshToken[]
+  logs          Log[]
+  comments      Comment[]
+}
+
+model UserBranch {
+  userId   Int
+  branchId Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// TEACHER
+model Teacher {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio          String?
+  salaryType   String   @default("fixed") // "fixed" | "percentage"
+  salaryAmount Decimal  @default(0) @db.Decimal(15, 2) // fixed: amount per student, percentage: e.g. 50
+  createdAt    DateTime @default(now())
+
+  groups             Group[]
+  salaries           Salary[]
+  teacherAttendances TeacherAttendance[]
+  workSchedules      WorkSchedule[]
+}
+
+// STUDENT
+model Student {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  balance    Decimal  @default(0) @db.Decimal(15, 2)
+  coins      Int      @default(0)
+  externalId String?
+  leadId     Int?     @unique
+  lead       Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  isArchived Boolean  @default(false)
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  groupEnrollments GroupStudent[]
+  payments         Payment[]
+  attendances      Attendance[]
+  grades           GradeRecord[]
+  examResults      ExamResult[]
+  comments         Comment[]
+  callHistory      CallRecord[]
+  smsHistory       SmsRecord[]
+  reminders        Reminder[]
+  orders           Order[]
+  ratings          Rating[]
+  departures       StudentDeparture[]
+
+  @@index([branchId])
+}
+
+// COURSE & SUBCOURSE
+model Course {
+  id             Int      @id @default(autoincrement())
+  branchId       Int
+  branch         Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  image          String?
+  price          Decimal  @db.Decimal(15, 2)
+  duration       Int?
+  lessonDuration Int? // minutes
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  subcourses Subcourse[]
+  groups     Group[]
+  leads      Lead[]
+
+  @@index([branchId])
+}
+
+model Subcourse {
+  id        Int     @id @default(autoincrement())
+  courseId  Int
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name      String
+  materials String?
+  sortOrder Int     @default(0)
+}
+
+// ROOM
+model Room {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  capacity  Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  groups     Group[]
+  emptyRooms EmptyRoom[]
+
+  @@index([branchId])
+}
+
+// GROUP
+enum DayType {
+  ODD
+  EVEN
+  OTHER
+}
+
+enum GroupStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+model Group {
+  id         Int         @id @default(autoincrement())
+  branchId   Int
+  branch     Branch      @relation(fields: [branchId], references: [id])
+  name       String
+  courseId   Int
+  course     Course      @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  teacherId  Int
+  teacher    Teacher     @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  roomId     Int?
+  room       Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  dayType    DayType
+  customDays String?
+  startTime  String
+  endTime    String
+  startDate  DateTime
+  endDate    DateTime?
+  capacity   Int?
+  note       String?
+  status     GroupStatus @default(ACTIVE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  students      GroupStudent[]
+  attendances   Attendance[]
+  grades        GradeRecord[]
+  onlineLessons OnlineLesson[]
+  discounts     Discount[]
+  exams         Exam[]
+  tags          GroupTag[]
+
+  @@index([branchId])
+  @@index([courseId])
+  @@index([teacherId])
+}
+
+model GroupStudent {
+  id        Int       @id @default(autoincrement())
+  groupId   Int
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  price     Decimal   @db.Decimal(15, 2)
+  status    String    @default("ACTIVE")
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([groupId, studentId])
+}
+
+// LEAD STAGE (configurable per branch — like Modme)
+model LeadStage {
+  id        Int     @id @default(autoincrement())
+  branchId  Int
+  branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  key       String // unique slug: "lead", "sinov_darsiga_chaqirildi", etc.
+  label     String // display name: "Leads", "Sinov darsiga chaqirildi"
+  color     String  @default("#1890ff")
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  @@unique([branchId, key])
+  @@index([branchId])
+}
+
+// LEAD
+model Lead {
+  id           Int      @id @default(autoincrement())
+  branchId     Int
+  branch       Branch   @relation(fields: [branchId], references: [id])
+  firstName    String
+  lastName     String?
+  phone        String
+  status       String   @default("lead") // references LeadStage.key
+  courseId     Int?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  source       String?
+  assignedToId Int?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student   Student?
+  tags      LeadTag[]
+  reminders Reminder[]
+
+  @@index([branchId])
+  @@index([courseId])
+}
+
+model LeadTag {
+  leadId Int
+  tagId  Int
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+}
+
+// ATTENDANCE
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  groupId   Int
+  group     Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@unique([groupId, studentId, date])
+  @@index([studentId])
+  @@index([groupId])
+  @@index([date])
+}
+
+model TeacherAttendance {
+  id        Int       @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date      DateTime  @db.Date
+  checkIn   DateTime?
+  checkOut  DateTime?
+  status    String    @default("PRESENT")
+  note      String?
+  createdAt DateTime  @default(now())
+
+  @@unique([teacherId, date])
+  @@index([teacherId])
+}
+
+model WorkSchedule {
+  id        Int     @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+
+  @@index([teacherId])
+}
+
+// GRADE & EXAM
+model GradeRecord {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, studentId, date])
+  @@index([studentId])
+  @@index([groupId])
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title     String
+  date      DateTime
+  maxScore  Int
+  createdAt DateTime @default(now())
+
+  results ExamResult[]
+
+  @@index([groupId])
+}
+
+model ExamResult {
+  id        Int      @id @default(autoincrement())
+  examId    Int
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score     Int
+  createdAt DateTime @default(now())
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+}
+
+// FINANCE
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  branchId    Int
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  studentId   Int
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  amount      Decimal       @db.Decimal(15, 2)
+  method      PaymentMethod
+  category    String? // finance category key: "cash", "bank", etc.
+  description String?
+  createdById Int?
+  date        DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+
+  @@index([branchId])
+  @@index([studentId])
+  @@index([date])
+}
+
+model Withdrawal {
+  id          Int           @id @default(autoincrement())
+  branchId    Int
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  amount      Decimal       @db.Decimal(15, 2)
+  method      PaymentMethod
+  description String?
+  category    String?
+  createdById Int?
+  date        DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+
+  @@index([branchId])
+}
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  title     String
+  amount    Decimal  @db.Decimal(15, 2)
+  category  String
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([branchId])
+}
+
+model Salary {
+  id        Int       @id @default(autoincrement())
+  teacherId Int
+  teacher   Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  groupId   Int
+  month     Int
+  year      Int
+  amount    Decimal   @db.Decimal(15, 2)
+  isPaid    Boolean   @default(false)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([teacherId, groupId, month, year])
+  @@index([teacherId])
+}
+
+// REMINDER
+model Reminder {
+  id             Int       @id @default(autoincrement())
+  branchId       Int
+  branch         Branch    @relation(fields: [branchId], references: [id])
+  title          String
+  description    String?
+  dueDate        DateTime
+  isCompleted    Boolean   @default(false)
+  completedAt    DateTime?
+  completionNote String?
+  leadId         Int?
+  lead           Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  studentId      Int?
+  student        Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  assignedToId   Int?
+  createdById    Int
+  createdAt      DateTime  @default(now())
+
+  @@index([branchId])
+  @@index([studentId])
+  @@index([leadId])
+}
+
+// RATING
+model Rating {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  groupId   Int
+  score     Decimal  @db.Decimal(5, 2)
+  period    String
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, groupId, period])
+  @@index([studentId])
+  @@index([groupId])
+}
+
+// COMMUNICATION
+model SmsRecord {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  phone     String
+  message   String
+  status    String   @default("SENT")
+  sentAt    DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model CallRecord {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  phone        String
+  direction    String
+  duration     Int?
+  recordingUrl String?
+  calledAt     DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// GAMIFICATION
+model Product {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  image       String?
+  coinPrice   Int
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([branchId])
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  studentId  Int
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  productId  Int
+  coinAmount Int
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+
+  @@index([branchId])
+  @@index([studentId])
+}
+
+// GROUP EXTRAS
+model OnlineLesson {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title     String
+  url       String
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  @@index([groupId])
+}
+
+model Discount {
+  id          Int      @id @default(autoincrement())
+  groupId     Int
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name        String
+  percentage  Decimal? @db.Decimal(5, 2)
+  fixedAmount Decimal? @db.Decimal(15, 2)
+  isActive    Boolean  @default(true)
+
+  @@index([groupId])
+}
+
+// TAGS
+model Tag {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+
+  leads  LeadTag[]
+  groups GroupTag[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+model GroupTag {
+  groupId Int
+  tagId   Int
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, tagId])
+}
+
+// SETTINGS
+model SmsSettings {
+  id         Int     @id @default(autoincrement())
+  branchId   Int     @unique
+  branch     Branch  @relation(fields: [branchId], references: [id])
+  provider   String
+  apiKey     String?
+  senderName String?
+  isActive   Boolean @default(false)
+}
+
+model VoipSettings {
+  id        Int     @id @default(autoincrement())
+  branchId  Int     @unique
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  provider  String
+  apiKey    String?
+  sipDomain String?
+  isActive  Boolean @default(false)
+}
+
+model Holiday {
+  id       Int      @id @default(autoincrement())
+  branchId Int
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name     String
+  date     DateTime @db.Date
+
+  @@index([branchId])
+}
+
+model Form {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  title     String
+  fields    Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([branchId])
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  title       String
+  content     String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([branchId])
+}
+
+// BRANCH CONFIG (key-value settings per branch)
+model BranchConfig {
+  id       Int    @id @default(autoincrement())
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+  key      String
+  value    Json
+
+  @@unique([branchId, key])
+}
+
+// AUDIT LOG
+model Log {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  entity    String
+  entityId  Int?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ══════════════════════���════════════════
+// CRMPro — New Models (asad-project merge)
+// ═══════════════════════════════════════
+
+// FINANCE CATEGORY (dual accounting: cash/bank)
+model FinanceCategory {
+  id        Int    @id @default(autoincrement())
+  branchId  Int
+  branch    Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  key       String // "cash", "bank", or custom
+  label     String // display name
+  color     String @default("#06b6d4")
+  sortOrder Int    @default(0)
+
+  @@unique([branchId, key])
+}
+
+// KPI TRACKING
+model KpiTarget {
+  id          Int      @id @default(autoincrement())
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  metric      String // "leads", "enrollments", "revenue", "attendance_rate", "debtors"
+  month       String // "2026-04"
+  targetValue Decimal  @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+
+  @@unique([branchId, metric, month])
+  @@index([branchId])
+}
+
+model KpiAssignment {
+  id           Int      @id @default(autoincrement())
+  branchId     Int
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  month        String
+  metric       String
+  targetValue  Decimal  @db.Decimal(15, 2)
+  direction    String   @default("up") // "up" | "down"
+  assignedToId Int
+  assignedById Int
+  createdAt    DateTime @default(now())
+
+  @@unique([branchId, month, metric, assignedToId])
+  @@index([branchId])
+  @@index([assignedToId])
+}
+
+// HR STAFF MANAGEMENT
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  DISMISSED
+}
+
+model HrStaff {
+  id        Int         @id @default(autoincrement())
+  branchId  Int
+  branch    Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?
+  category  String? // "teacher", "admin", "support", "manager"
+  position  String?
+  subject   String?
+  startDate DateTime?
+  endDate   DateTime?
+  status    StaffStatus @default(ACTIVE)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([branchId])
+}
+
+model HrGoal {
+  id          Int       @id @default(autoincrement())
+  branchId    Int
+  branch      Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category    String?
+  subject     String?
+  title       String
+  description String?
+  deadline    DateTime?
+  status      String    @default("pending") // pending, in_progress, completed, cancelled
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([branchId])
+}
+
+// DAILY REPORT (bot & CRM sync aggregated data)
+model DailyReport {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  section    String // "leads", "debtors", "finance", "attendance", "problems", "rejections"
+  data       Json // flexible: { count, amount, subject, etc. }
+  reportedBy Int? // userId who entered via bot
+  source     String   @default("manual") // "manual", "crm-sync", "bot"
+  createdAt  DateTime @default(now())
+
+  @@index([branchId, date, section])
+}
+
+// PROBLEM TRACKING
+model Problem {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  type       String // "equipment", "facility", "staff", "student", "finance", "other"
+  issue      String
+  status     String   @default("open") // open, in_progress, resolved
+  reportedBy Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([branchId])
+}
+
+// EMPTY ROOM TRACKING
+model EmptyRoom {
+  id              Int      @id @default(autoincrement())
+  branchId        Int
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  roomId          Int?
+  room            Room?    @relation(fields: [roomId], references: [id])
+  days            String // "Dush,Chor,Jum"
+  timeSlot        String // "14:00-16:00"
+  period          String?
+  capacity        Int      @default(20)
+  pricePerStudent Decimal  @default(350000) @db.Decimal(15, 2)
+  createdAt       DateTime @default(now())
+
+  @@index([branchId])
+}
+
+// AI INSIGHTS
+model AiInsight {
+  id         Int      @id @default(autoincrement())
+  branchId   Int
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  type       String // "daily_analysis", "anomaly", "qa_response", "weekly_summary"
+  reportDate DateTime @db.Date
+  content    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([branchId])
+}
+
+// LESSON PAYMENT (daily auto-deduction per lesson)
+model LessonPayment {
+  id             Int       @id @default(autoincrement())
+  branchId       Int
+  branch         Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  groupId        Int
+  studentId      Int
+  date           DateTime  @db.Date
+  amount         Decimal   @db.Decimal(15, 2) // course_price / lessons_per_month
+  teacherShare   Decimal   @db.Decimal(15, 2) // teacher's share for this lesson
+  status         String    @default("paid") // "paid" | "written_off"
+  writtenOffBy   Int? // userId who wrote it off
+  writtenOffAt   DateTime?
+  writeOffReason String?
+  createdAt      DateTime  @default(now())
+
+  @@unique([groupId, studentId, date])
+  @@index([branchId])
+  @@index([studentId])
+  @@index([date])
+  @@index([groupId])
+}
+
+// CRON JOBS CONFIGURATION
+model CronJob {
+  id         Int      @id @default(autoincrement())
+  branchId   Int?
+  key        String   @unique
+  label      String
+  schedule   String // cron expression: "0 9 * * *"
+  enabled    Boolean  @default(true)
+  type       String   @default("message") // "message", "report"
+  message    String?
+  sections   String? // comma-separated: "leads,finance,attendance"
+  assignedTo Json? // array of user IDs
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════
+// REJECTION SYSTEM (Lead boshqaruvi)
+// ═══════════════════════════════════════
+
+// Configurable rejection reasons (per branch)
+model RejectionReason {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  label     String   // "Narx", "Sifat", "Vaqt", "Boshqa markaz", etc.
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  studentDepartures StudentDeparture[]
+  leadDeletions     LeadDeletion[]
+
+  @@unique([branchId, label])
+  @@index([branchId])
+}
+
+// Records when a student leaves (appears in Rad etganlar page)
+model StudentDeparture {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type      String   // "sinov" (< 1 month) or "doimiy" (≥ 1 month) — auto-calculated
+  reasonId  Int
+  reason    RejectionReason @relation(fields: [reasonId], references: [id])
+  note      String?
+  groupId   Int?     // which group they left from
+  teacherId Int?     // teacher of that group
+  courseId  Int?     // course of that group
+  departureDate DateTime @default(now())
+  createdById   Int      // who processed the departure
+  createdAt     DateTime @default(now())
+
+  @@index([branchId])
+  @@index([studentId])
+  @@index([reasonId])
+  @@index([type])
+  @@index([departureDate])
+}
+
+// Records when a lead is deleted from Kanban (with reason)
+model LeadDeletion {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  leadId    Int      // original lead ID (lead may be soft-deleted)
+  firstName String
+  lastName  String?
+  phone     String
+  reasonId  Int
+  reason    RejectionReason @relation(fields: [reasonId], references: [id])
+  note      String?
+  source    String?  // original lead source
+  courseId  Int?     // original lead course
+  deletedById Int    // who deleted
+  createdAt   DateTime @default(now())
+
+  @@index([branchId])
+  @@index([reasonId])
+  @@index([createdAt])
+}
+
+// CRM SYNC STATE
+model CrmSyncState {
+  id           Int      @id @default(autoincrement())
+  syncType     String   @unique // "leads", "payments", "expenses", "debtors", "attendance"
+  lastSyncedAt DateTime
+  updatedAt    DateTime @updatedAt
+}

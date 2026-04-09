@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>CRMPro</title>
+    <style>
+      * { -webkit-tap-highlight-color: transparent; }
+      body { margin: 0; overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      @media (max-width: 768px) {
+        ::-webkit-scrollbar { display: none; }
+        .ant-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .ant-modal { max-width: calc(100vw - 32px) !important; margin: 16px auto !important; }
+        .ant-modal .ant-modal-content { border-radius: 16px !important; }
+        .ant-card { border-radius: 12px !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
